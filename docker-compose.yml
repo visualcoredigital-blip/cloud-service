@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Tu microservicio modular de Node.js
+  cloud-service:
+    build: .
+    container_name: generate-contacts-pdf-local
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - MONGODB_URI=${MONGODB_URI}
+      - BUCKET_NAME=contact-pdf-exports
+      - GCP_PROJECT_ID=analog-campus-477216-r0
+      # Obliga al código de Node.js a comunicarse con el emulador
+      - PUBSUB_EMULATOR_HOST=pubsub-emulator:8085
+      - GOOGLE_APPLICATION_CREDENTIALS=/usr/src/app/gcp-key.json
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - C:/Users/Francisco Chacon/apps/visualcoredigital-manager/documentos/google-cloud/analog-campus-477216-r0-72a7535f1750.json:/usr/src/app/gcp-key.json:ro
+    depends_on:
+      - pubsub-emulator
+    networks:
+      - vcd-network
+
+  # El Emulador de Pub/Sub limpio y directo
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: vcd_pubsub_emulator
+    ports:
+      - "8085:8085"
+    # Solo enciende el servicio, sin configuraciones extra de gcloud
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
+    networks:
+      - vcd-network
+
+networks:
+  vcd-network:
+    driver: bridge
